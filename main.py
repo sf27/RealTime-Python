@@ -5,27 +5,19 @@ from tornado import websocket
 from tornado import web
 
 class EventBus(object):
-    _instance = None
-    _lock = threading.Lock()
+    clients = list()
 
-    def __new__(cls):
-        if EventBus._instance is None:
-            with EventBus._lock:
-                if EventBus._instance is None:
-                    EventBus._instance = super(EventBus, cls).__new__(cls)
-        return EventBus._instance
+    @classmethod
+    def subscribe(cls, client):
+        cls.clients.append(client)
 
-    def __init__(self):
-        self.clients = []
+    @classmethod
+    def unsubscribe(cls, client):
+        cls.clients.remove(client)
 
-    def subscribe(self, client):
-        self.clients.append(client)
-
-    def unsubscribe(self, client):
-        self.clients.remove(client)
-
-    def broadcast(self, message):
-        for client in list(self.clients):
+    @classmethod
+    def broadcast(cls, message):
+        for client in list(cls.clients):
             client.write_message(str(message))
 
 
@@ -36,20 +28,17 @@ class HomeHandler(web.RequestHandler):
     def check_origin(self, origin):
         return True
 
-class WebSocketHandler(websocket.WebSocketHandler):
-    def __init__(self, *args, **kwargs):
-        super(WebSocketHandler, self).__init__(*args, **kwargs)
-        self.event_bus = EventBus()
 
+class WebSocketHandler(websocket.WebSocketHandler):
     def open(self):
-        self.event_bus.subscribe(self)
+        EventBus.subscribe(self)
 
     def on_message(self, message):
         json_message = json.loads(message)
         self.write_message(json_message)
 
     def on_close(self):
-        self.event_bus.unsubscribe(self)
+        EventBus.unsubscribe(self)
 
     def check_origin(self, origin):
         return True
