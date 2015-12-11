@@ -1,0 +1,66 @@
+<!DOCTYPE>
+<html>
+<head>
+    <title>RealTime</title>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.4.2.min.js"></script>
+</head>
+<body>
+    <h1>Hello world MobyDev</h1>
+
+    <input name='data' id="data" />
+    <div>
+        <input type='submit' onclick="send()"></div>
+    <div id="messages"></div>
+
+<script type="text/javascript" charset="utf-8">
+
+    var WS = undefined;
+
+    function send() {
+      // Construct a msg object containing the data the server needs to process the message from the chat client.
+      var msg = {
+        data: {message: document.getElementById("data").value},
+        date: Date.now()
+      };
+
+      // Send the msg object as a JSON-formatted string.
+      WS.send(JSON.stringify(msg));
+
+    }
+
+    $(document).ready(function () {
+
+        $('form').submit(function (event) {
+            var value = $('#data').val();
+            $.post("/websocket/", {data: value}, function (data) {
+                $("#data").val('');
+            });
+            return false;
+        });
+
+
+        if ("WebSocket" in window) {
+            var ws = new WebSocket("ws://localhost:8007/websocket/");
+            WS = ws;
+            
+            ws.onopen = function () {
+                console.log("WebSocket opened")
+            };
+            
+            ws.onmessage = function (evt) {
+                var received_msg = evt.data;
+                var html = $("#messages").html();
+                html += "<li>" + received_msg + "</li>";
+                $("#messages").html(html);
+            };
+            
+            ws.onclose = function () {
+                console.log("WebSocket closed")
+            };
+        } else {
+            alert("WebSocket not supported");
+        }
+    });
+</script>
+</body>
+</html>
