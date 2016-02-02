@@ -35,7 +35,7 @@ class WebSocketHandler(websocket.WebSocketHandler):
 
     def on_message(self, message):
         json_message = json.loads(message)
-        self.write_message(json_message)
+        EventBus.broadcast(json_message)
 
     def on_close(self):
         EventBus.unsubscribe(self)
